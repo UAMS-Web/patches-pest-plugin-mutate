@@ -27,5 +27,6 @@
   "support": {
     "issues": "https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues",
     "source": "https://github.com/UAMS-Web/patches-pest-plugin-mutate"
-  }
+  },
+  "license": "MIT"
 }

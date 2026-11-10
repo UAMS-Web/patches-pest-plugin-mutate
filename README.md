@@ -41,3 +41,7 @@ Each description names the ticket that tracks the upstream fix.
 ## Verifying the set
 
 Apply the seven patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE). The patches modify `pestphp/pest-plugin-mutate`, which is also MIT licensed.
