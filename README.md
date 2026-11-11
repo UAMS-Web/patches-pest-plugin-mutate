@@ -6,6 +6,14 @@ This package pins `pestphp/pest-plugin-mutate` to exactly `5.0.2`. Every patch i
 
 ## Install
 
+This package is read from GitHub with a `vcs` repository, not from Packagist. The consumer's root `composer.json` lists it (Composer reads `repositories` only from the root project):
+
+```json
+"repositories": [
+  { "type": "vcs", "url": "https://github.com/UAMS-Web/patches-pest-plugin-mutate.git" }
+]
+```
+
 An application requires it in `require` (the plugin applies a dependency's patches only from `packages` in `composer.lock`):
 
 ```bash
