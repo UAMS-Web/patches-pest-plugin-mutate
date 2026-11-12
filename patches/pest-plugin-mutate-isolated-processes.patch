@@ -2,7 +2,7 @@ diff --git a/src/Autoload.php b/src/Autoload.php
 new file mode 100644
 --- /dev/null
 +++ b/src/Autoload.php
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,18 @@
 +<?php
 +
 +declare(strict_types=1);
@@ -12,12 +12,14 @@ new file mode 100644
 +use Pest\Mutate\Plugins\Mutate;
 +use Pest\Mutate\Support\StreamWrapper;
 +
-+// Composer also runs in isolated PHPUnit children, without Pest's kernel.
-+if (getenv(Mutate::ENV_MUTATION_TESTING) !== false) {
++// Composer also runs in isolated PHPUnit children, without Pest's kernel. Mutate::boot() starts
++// the wrapper too where this file is not loaded, so the constant keeps it to one start.
++if (getenv(Mutate::ENV_MUTATION_TESTING) !== false && ! defined('PEST_MUTATE_STREAM_WRAPPER_STARTED')) {
 +    StreamWrapper::start(
 +        (string) getenv(Mutate::ENV_MUTATION_TESTING),
 +        (string) getenv(Mutate::ENV_MUTATION_FILE),
 +    );
++    define('PEST_MUTATE_STREAM_WRAPPER_STARTED', true);
 +}
 diff --git a/src/MutationTest.php b/src/MutationTest.php
 --- a/src/MutationTest.php
@@ -105,23 +107,18 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
 diff --git a/src/Plugins/Mutate.php b/src/Plugins/Mutate.php
 --- a/src/Plugins/Mutate.php
 +++ b/src/Plugins/Mutate.php
-@@ -37,7 +37,6 @@ use Pest\Mutate\Event\Facade;
- use Pest\Mutate\Repositories\ConfigurationRepository;
- use Pest\Mutate\Subscribers\PrinterSubscriber;
- use Pest\Mutate\Support\Printers\DefaultPrinter;
--use Pest\Mutate\Support\StreamWrapper;
- use Pest\Plugins\Concerns\HandleArguments;
- use Pest\Plugins\Parallel;
- use Pest\Support\Container;
-@@ -80,11 +79,6 @@ class Mutate implements AddsOutput, Bootable, HandlesArguments
+@@ -80,9 +80,13 @@ class Mutate implements AddsOutput, Bootable, HandlesArguments
  
      public function boot(): void
      {
 -        if (getenv(self::ENV_MUTATION_TESTING) !== false) {
--            // @phpstan-ignore-next-line
--            StreamWrapper::start(getenv(self::ENV_MUTATION_TESTING), (string) getenv(self::ENV_MUTATION_FILE));
--        }
--
-         $this->container->add(MutationTestRunner::class, $runner = new \Pest\Mutate\Tester\MutationTestRunner);
-         $this->container->add(Printer::class, $printer = new DefaultPrinter($this->output));
++        // src/Autoload.php starts the wrapper first where the consumer loads it (including in
++        // isolated PHPUnit children). Start it here too, so a consumer that does not list that
++        // file under autoload still has its mutations applied, and only once.
++        if (getenv(self::ENV_MUTATION_TESTING) !== false && ! defined('PEST_MUTATE_STREAM_WRAPPER_STARTED')) {
+             // @phpstan-ignore-next-line
+             StreamWrapper::start(getenv(self::ENV_MUTATION_TESTING), (string) getenv(self::ENV_MUTATION_FILE));
++            define('PEST_MUTATE_STREAM_WRAPPER_STARTED', true);
+         }
  
+         $this->container->add(MutationTestRunner::class, $runner = new \Pest\Mutate\Tester\MutationTestRunner);
