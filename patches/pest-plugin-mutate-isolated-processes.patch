@@ -1,0 +1,127 @@
+diff --git a/src/Autoload.php b/src/Autoload.php
+new file mode 100644
+--- /dev/null
++++ b/src/Autoload.php
+@@ -0,0 +1,16 @@
++<?php
++
++declare(strict_types=1);
++
++namespace Pest\Mutate;
++
++use Pest\Mutate\Plugins\Mutate;
++use Pest\Mutate\Support\StreamWrapper;
++
++// Composer also runs in isolated PHPUnit children, without Pest's kernel.
++if (getenv(Mutate::ENV_MUTATION_TESTING) !== false) {
++    StreamWrapper::start(
++        (string) getenv(Mutate::ENV_MUTATION_TESTING),
++        (string) getenv(Mutate::ENV_MUTATION_FILE),
++    );
++}
+diff --git a/src/MutationTest.php b/src/MutationTest.php
+--- a/src/MutationTest.php
++++ b/src/MutationTest.php
+@@ -4,6 +4,7 @@ declare(strict_types=1);
+ 
+ namespace Pest\Mutate;
+ 
++use DOMDocument;
+ use ParaTest\Options;
+ use Pest\Mutate\Event\Facade;
+ use Pest\Mutate\Plugins\Mutate;
+@@ -38,8 +39,21 @@ class MutationTest
+ 
+     private Process $process;
+ 
++    private string $reportPath;
++
+     public function __construct(public readonly Mutation $mutation) {}
+ 
++    public function __destruct()
++    {
++        if (isset($this->process)) {
++            $this->process->stop(0);
++        }
++
++        if (isset($this->reportPath) && file_exists($this->reportPath)) {
++            unlink($this->reportPath);
++        }
++    }
++
+     public function getId(): string
+     {
+         return $this->mutation->id;
+@@ -181,6 +195,12 @@ class MutationTest
+         }
+         $filteredArguments = $withoutParallelRunnerOptions;
+ 
++        $reportPath = tempnam(sys_get_temp_dir(), 'pest-mutate-');
++        if ($reportPath === false) {
++            throw new RuntimeException('Cannot create mutation test report');
++        }
++        $this->reportPath = $reportPath;
++
+         // TODO: filter arguments to remove unnecessary stuff (Teamcity, Coverage, etc.)
+         $process = new Process(
+             command: [
+@@ -194,6 +214,7 @@ class MutationTest
+                 // hasFinished() scores it killed. See uams-statamic#2524. The filter is kept in
+                 // $filter so the time limit below can tell whether it was widened (#3202).
+                 '--filter='.($filter = self::childFilter($filters, [...$filteredArguments, '--bail'], DIRECTORY_SEPARATOR === '\\', $this->mutation->file->getRealPath().':'.$this->mutation->startLine)),
++                '--log-junit='.$this->reportPath,
+             ],
+             env: $envs,
+             timeout: self::childTimeout($this->initialTestSuiteDuration(), $filter !== implode('|', $filters)),
+@@ -329,6 +350,7 @@ class MutationTest
+                 return false;
+             }
+         } catch (ProcessTimedOutException) {
++            unlink($this->reportPath);
+             $this->updateResult(MutationTestResult::Timeout);
+ 
+             Facade::instance()->emitter()->mutationTimedOut($this);
+@@ -338,6 +360,20 @@ class MutationTest
+             return true;
+         }
+ 
++        $report = file_get_contents($this->reportPath);
++        unlink($this->reportPath);
++        $document = new DOMDocument;
++        if (
++            $report === false || $report === '' ||
++            ! $document->loadXML($report, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING) ||
++            $document->getElementsByTagName('testcase')->length === 0
++        ) {
++            throw new RuntimeException(
++                'Mutation test process did not report any executed tests (exit '.$this->process->getExitCode().').'.PHP_EOL.
++                $this->process->getOutput().$this->process->getErrorOutput()
++            );
++        }
++
+         if ($this->process->isSuccessful()) {
+             $this->updateResult(MutationTestResult::Untested);
+ 
+diff --git a/src/Plugins/Mutate.php b/src/Plugins/Mutate.php
+--- a/src/Plugins/Mutate.php
++++ b/src/Plugins/Mutate.php
+@@ -37,7 +37,6 @@ use Pest\Mutate\Event\Facade;
+ use Pest\Mutate\Repositories\ConfigurationRepository;
+ use Pest\Mutate\Subscribers\PrinterSubscriber;
+ use Pest\Mutate\Support\Printers\DefaultPrinter;
+-use Pest\Mutate\Support\StreamWrapper;
+ use Pest\Plugins\Concerns\HandleArguments;
+ use Pest\Plugins\Parallel;
+ use Pest\Support\Container;
+@@ -80,11 +79,6 @@ class Mutate implements AddsOutput, Bootable, HandlesArguments
+ 
+     public function boot(): void
+     {
+-        if (getenv(self::ENV_MUTATION_TESTING) !== false) {
+-            // @phpstan-ignore-next-line
+-            StreamWrapper::start(getenv(self::ENV_MUTATION_TESTING), (string) getenv(self::ENV_MUTATION_FILE));
+-        }
+-
+         $this->container->add(MutationTestRunner::class, $runner = new \Pest\Mutate\Tester\MutationTestRunner);
+         $this->container->add(Printer::class, $printer = new DefaultPrinter($this->output));
+ 

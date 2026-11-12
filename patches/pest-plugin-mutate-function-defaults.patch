@@ -1,0 +1,23 @@
+diff --git a/src/Mutation.php b/src/Mutation.php
+--- a/src/Mutation.php
++++ b/src/Mutation.php
+@@ -8,7 +8,6 @@ use Pest\Exceptions\ShouldNotHappen;
+ use Pest\Mutate\Support\PhpParserFactory;
+ use PhpParser\Node;
+ use PhpParser\Node\Param;
+-use PhpParser\Node\Stmt\ClassMethod;
+ use PhpParser\PrettyPrinter\Standard;
+ use SebastianBergmann\Diff\Differ;
+ use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
+@@ -61,9 +60,9 @@ class Mutation
+ 
+         if (
+             $originalNode->getAttribute('parent') instanceof Param &&
+-            $originalNode->getAttribute('parent')->getAttribute('parent') instanceof ClassMethod
++            $originalNode->getAttribute('parent')->getAttribute('parent') instanceof Node\FunctionLike
+         ) {
+-            // use the end line of the method instead if a parameter is mutated, otherwise it is not considered as covered
++            // Use the function or method body when selecting tests for a mutated parameter.
+             $endLine = $originalNode->getAttribute('parent')->getAttribute('parent')->getEndLine();
+         }
+ 

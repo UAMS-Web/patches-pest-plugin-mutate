@@ -35,8 +35,12 @@ Applied in this order, which is the order in `composer.json`. A later patch is c
 - **`pest-plugin-mutate-windows-filter-length.patch`**: Widen or refuse a mutant child's filter that PCRE cannot compile, or that would pass cmd.exe's command-line limit on Windows, so it cannot score a kill without running a test (temporary; see #2578, #3114)
 - **`pest-plugin-mutate-write-mutated-source.patch`**: Create the mutations directory and fail on a mutated source that cannot be written, so a run cannot score mutants it never applied (temporary; see #2812)
 - **`pest-plugin-mutate-drop-parallel-runner-options.patch`**: Drop the parallel runner's options (--passthru-php, --processes and the rest) from each mutant child so a parallel run given one cannot score every mutant killed (temporary; see #2926, #2947)
+- **`pest-plugin-mutate-function-defaults.patch`**: Select tests for a mutated scalar function default, so it is not scored without a test running it (temporary; see UAMS-Web/uams-2020#673)
+- **`pest-plugin-mutate-isolated-processes.patch`**: Propagate a mutation into isolated test processes and reject a test report that ran no tests, so an isolated run cannot score a mutant killed without running a test (temporary; see UAMS-Web/UAMSWP-Logo-List#82)
+- **`pest-plugin-mutate-class-constant-coverage.patch`**: Map a class constant mutant to the tests covering its containing class, since a constant initializer has no executable coverage line (temporary)
+- **`pest-plugin-mutate-ignore-annotated-statement.patch`**: Skip a node whose own comment carries a matching @pest-mutate-ignore marker, including when the traverser still leaves that node (temporary)
 
-Each description names the ticket that tracks the upstream fix.
+Each description names the ticket that tracks the upstream fix, or the consumer ticket that moved the patch here where no upstream ticket exists.
 
 ## Versioning
 
@@ -48,7 +52,7 @@ Each description names the ticket that tracks the upstream fix.
 
 ## Verifying the set
 
-Apply the seven patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
+Apply the eleven patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
 
 ## License
 
