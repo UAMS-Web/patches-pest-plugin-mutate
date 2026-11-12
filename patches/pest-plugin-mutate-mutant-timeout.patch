@@ -1,0 +1,35 @@
+diff --git a/src/MutationTest.php b/src/MutationTest.php
+--- a/src/MutationTest.php
++++ b/src/MutationTest.php
+@@ -217,7 +217,7 @@ class MutationTest
+                 '--log-junit='.$this->reportPath,
+             ],
+             env: $envs,
+-            timeout: self::childTimeout($this->initialTestSuiteDuration(), $filter !== implode('|', $filters)),
++            timeout: self::childTimeout(self::serialBasis($this->initialTestSuiteDuration(), $configuration->processes), $filter !== implode('|', $filters)),
+         );
+ 
+         $this->start = microtime(true);
+@@ -333,6 +333,22 @@ class MutationTest
+         return $widened ? max($limit, (int) ($initialTestSuiteDuration * 3)) : $limit;
+     }
+ 
++    /**
++     * The initial suite duration restated as the serial work it stands for.
++     *
++     * A `--parallel` run times the initial suite across N workers, so it reads about 1/N of
++     * the time one mutant child needs to run its covering tests serially, while up to N
++     * children run at once and contend for the same cores. The limit is sized from this
++     * figure, so a child that does nothing wrong exceeded it and was scored a timeout, which
++     * the run reports as unverified and which keeps `--min=100` out of reach. N is the run's
++     * process count, 1 when the run is not parallel, so a serial run keeps the plugin's limit
++     * unchanged. See UAMS-Web/patches-pest-plugin-mutate#2 and aether-multisite-forms#234.
++     */
++    public static function serialBasis(float $initialTestSuiteDuration, int $processes): float
++    {
++        return $initialTestSuiteDuration * max(1, $processes);
++    }
++
+     private function initialTestSuiteDuration(): float
+     {
+         /** @var TelemetryRepository $telemetryRepository */
