@@ -55,6 +55,10 @@ Each description names the ticket that tracks the upstream fix, or the consumer 
 
 Apply the twelve patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
 
+`tests/check.sh` does this on every pull request, in `.github/workflows/patches.yml`. It installs the pinned upstream, applies every patch `composer.json` lists and fails if one does not apply. It then drives the real `MutationTest::start()` and asserts the time limit the mutant-timeout patch gives a child: for a 3.9 s initial suite, 8 s in a serial run and 56 s at 12 processes. With the timeout patch left out (`SKIP_PATCH=pest-plugin-mutate-mutant-timeout.patch tests/check.sh`) the 12-process figure is 8 s and the check fails.
+
+A consumer therefore needs no test of its own that asserts the mutant-timeout patch is present in `vendor/`: this repository's check fails when the patch stops applying to the pin or stops changing the limit. The eleven earlier patches are checked for applying only.
+
 ## License
 
 MIT, see [`LICENSE`](LICENSE). The patches modify `pestphp/pest-plugin-mutate`, which is also MIT licensed.
