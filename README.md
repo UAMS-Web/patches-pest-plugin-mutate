@@ -39,6 +39,7 @@ Applied in this order, which is the order in `composer.json`. A later patch is c
 - **`pest-plugin-mutate-isolated-processes.patch`**: Propagate a mutation into isolated test processes and reject a test report that ran no tests, so an isolated run cannot score a mutant killed without running a test (temporary; see UAMS-Web/UAMSWP-Logo-List#82)
 - **`pest-plugin-mutate-class-constant-coverage.patch`**: Map a class constant mutant to the tests covering its containing class, since a constant initializer has no executable coverage line (temporary)
 - **`pest-plugin-mutate-ignore-annotated-statement.patch`**: Skip a node whose own comment carries a matching @pest-mutate-ignore marker, including when the traverser still leaves that node (temporary)
+- **`pest-plugin-mutate-mutant-timeout.patch`**: Size a mutant child's time limit from the serial work the initial suite stands for, so a --parallel run cannot score a mutant a timeout that no test caused (temporary; see UAMS-Web/patches-pest-plugin-mutate#2)
 
 Each description names the ticket that tracks the upstream fix, or the consumer ticket that moved the patch here where no upstream ticket exists.
 
@@ -52,7 +53,7 @@ Each description names the ticket that tracks the upstream fix, or the consumer 
 
 ## Verifying the set
 
-Apply the eleven patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
+Apply the twelve patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
 
 ## License
 
