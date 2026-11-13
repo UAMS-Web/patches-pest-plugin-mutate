@@ -83,21 +83,29 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
              $this->updateResult(MutationTestResult::Timeout);
  
              Facade::instance()->emitter()->mutationTimedOut($this);
-@@ -338,6 +360,20 @@ class MutationTest
+@@ -338,6 +360,28 @@ class MutationTest
              return true;
          }
  
 +        $report = file_get_contents($this->reportPath);
 +        unlink($this->reportPath);
 +        $document = new DOMDocument;
++        $output = $this->process->getOutput().$this->process->getErrorOutput();
++        // A child that crashes mid-test (a stack overflow from a mutant that recurses without
++        // bound, say) writes no report but prints the failed test (colored, so the escapes are stripped to read it), and is a kill. A child that
++        // exits 0, or fails without printing a failed test (a boot failure), ran no test and is
++        // refused. See UAMS-Web/patches-pest-plugin-mutate#27.
 +        if (
-+            $report === false || $report === '' ||
-+            ! $document->loadXML($report, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING) ||
-+            $document->getElementsByTagName('testcase')->length === 0
++            (
++                $report === false || $report === '' ||
++                ! $document->loadXML($report, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING) ||
++                $document->getElementsByTagName('testcase')->length === 0
++            ) &&
++            ($this->process->isSuccessful() || preg_match('/^\s*Tests:.*\b(?:failed|errors?)\b/mi', preg_replace('/\e\[[0-9;]*m/', '', $output)) !== 1)
 +        ) {
 +            throw new RuntimeException(
 +                'Mutation test process did not report any executed tests (exit '.$this->process->getExitCode().').'.PHP_EOL.
-+                $this->process->getOutput().$this->process->getErrorOutput()
++                $output
 +            );
 +        }
 +
