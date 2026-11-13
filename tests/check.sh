@@ -47,7 +47,9 @@ for patch in $patches; do
 done
 echo "$applied patches applied"
 
-php -r 'require $argv[1]; exit(require $argv[2]);' "$work/vendor/autoload.php" "$root/tests/timeout.php" 2>&1 || {
-    status=$?
-    exit "$status"
-}
+for script in timeout crash; do
+    php -r 'require $argv[1]; exit(require $argv[2]);' "$work/vendor/autoload.php" "$root/tests/$script.php" 2>&1 || {
+        status=$?
+        exit "$status"
+    }
+done
