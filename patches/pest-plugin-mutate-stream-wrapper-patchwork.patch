@@ -1,0 +1,26 @@
+diff --git a/src/Support/StreamWrapper.php b/src/Support/StreamWrapper.php
+--- a/src/Support/StreamWrapper.php
++++ b/src/Support/StreamWrapper.php
+@@ -290,11 +290,21 @@
+      */
+     private function withOriginalWrapper(callable $callback): mixed
+     {
++        // Patchwork chains to this wrapper when it loads after it, and registers itself in front of it.
++        // Registering this wrapper alone afterwards would leave Patchwork out of every later include,
++        // so it could not redefine a function. Put Patchwork back in front when it chains to this class.
++        $patchwork = class_exists(\Patchwork\CodeManipulation\Stream::class, false)
++            && \Patchwork\CodeManipulation\Stream::getOtherWrapper(null) instanceof self;
++
+         self::disable();
+ 
+         $result = $callback();
+ 
+-        self::enable();
++        if ($patchwork) {
++            \Patchwork\CodeManipulation\Stream::wrap();
++        } else {
++            self::enable();
++        }
+ 
+         return $result;
+     }

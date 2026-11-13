@@ -16,7 +16,7 @@ trap 'rm -rf "$work"' EXIT
 # The package itself is not installed, so its patches stay in $root and are applied by hand.
 php -r '
 $c = json_decode(file_get_contents($argv[1]), true);
-echo json_encode(["require" => ["pestphp/pest-plugin-mutate" => getenv("UPSTREAM_VERSION") ?: $c["require"]["pestphp/pest-plugin-mutate"], "pestphp/pest" => "^5.0.4"], "config" => ["allow-plugins" => false]]);
+echo json_encode(["require" => ["pestphp/pest-plugin-mutate" => getenv("UPSTREAM_VERSION") ?: $c["require"]["pestphp/pest-plugin-mutate"], "pestphp/pest" => "^5.0.4", "antecedent/patchwork" => "2.2.4"], "config" => ["allow-plugins" => false]]);
 ' "$root/composer.json" > "$work/composer.json"
 
 (cd "$work" && composer update --no-interaction --no-plugins --no-scripts --quiet)
@@ -47,7 +47,7 @@ for patch in $patches; do
 done
 echo "$applied patches applied"
 
-for script in timeout crash; do
+for script in timeout crash patchwork; do
     php -r 'require $argv[1]; exit(require $argv[2]);' "$work/vendor/autoload.php" "$root/tests/$script.php" 2>&1 || {
         status=$?
         exit "$status"
