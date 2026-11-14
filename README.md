@@ -42,6 +42,7 @@ Applied in this order, which is the order in `composer.json`. A later patch is c
 - **`pest-plugin-mutate-ignore-annotated-statement.patch`**: Skip a node whose own comment carries a matching @pest-mutate-ignore marker, including when the traverser still leaves that node (temporary)
 - **`pest-plugin-mutate-mutant-timeout.patch`**: Size a mutant child's time limit from the serial work the initial suite stands for, so a --parallel run cannot score a mutant a timeout that no test caused (temporary; see UAMS-Web/patches-pest-plugin-mutate#2)
 - **`pest-plugin-mutate-stream-wrapper-patchwork.patch`**: Keep Patchwork in front of the mutation stream wrapper after a pass-through read, so a function a test mocks is still redefined in a mutant child that logs to junit (temporary; see UAMS-Web/patches-pest-plugin-mutate#31)
+- **`pest-plugin-mutate-mutant-timeout-retry.patch`**: Run a mutant child again when it times out once, and score a timeout only when the second attempt times out too, so a transient slowdown of the machine cannot keep --min=100 out of reach (temporary; see UAMS-Web/patches-pest-plugin-mutate#30)
 
 Each description names the ticket that tracks the upstream fix, or the consumer ticket that moved the patch here where no upstream ticket exists.
 
@@ -55,11 +56,11 @@ Each description names the ticket that tracks the upstream fix, or the consumer 
 
 ## Verifying the set
 
-Apply the thirteen patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
+Apply the fourteen patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
 
 `tests/check.sh` does this on every pull request, in `.github/workflows/patches.yml`. It installs the pinned upstream, applies every patch `composer.json` lists and fails if one does not apply. It then drives the real `MutationTest::start()` and asserts the time limit the mutant-timeout patch gives a child: for a 3.9 s initial suite, 8 s in a serial run and 56 s at 12 processes. `tests/crash.php` drives `hasFinished()` with five children: one that crashes after printing a failed test, and one killed by a fatal error that prints PHPUnit's premature-end line naming its test, must score a kill; one that fails without a failed test, one that dies of a fatal error before any test starts, and one that exits 0 with no report must be refused. With the timeout patch left out (`SKIP_PATCH=pest-plugin-mutate-mutant-timeout.patch tests/check.sh`) the 12-process figure is 8 s and the check fails.
 
-A consumer therefore needs no test of its own that asserts the mutant-timeout patch is present in `vendor/`: this repository's check fails when the patch stops applying to the pin or stops changing the limit. `tests/patchwork.php` also checks that Patchwork is back in front of the stream wrapper after a pass-through read. The other eleven patches are checked for applying only.
+A consumer therefore needs no test of its own that asserts the mutant-timeout patch is present in `vendor/`: this repository's check fails when the patch stops applying to the pin or stops changing the limit. `tests/patchwork.php` also checks that Patchwork is back in front of the stream wrapper after a pass-through read, and `tests/retry.php` drives `hasFinished()` with a child that runs past its limit: one that times out once and is killed on the second attempt, and one that times out once and passes on it, are scored by the second attempt, and one that times out twice is scored a timeout. With the retry patch left out (`SKIP_PATCH=pest-plugin-mutate-mutant-timeout-retry.patch tests/check.sh`) the first two cases score a timeout and the check fails. The other ten patches are checked for applying only.
 
 ## License
 
