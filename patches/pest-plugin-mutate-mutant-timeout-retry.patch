@@ -1,0 +1,32 @@
+diff --git a/src/MutationTest.php b/src/MutationTest.php
+index 6299c73..ed00100 100644
+--- a/src/MutationTest.php
++++ b/src/MutationTest.php
+@@ -41,6 +41,9 @@ class MutationTest
+ 
+     private string $reportPath;
+ 
++    /** Whether this child has already timed out once and been run again. See UAMS-Web/patches-pest-plugin-mutate#30. */
++    private bool $retriedAfterTimeout = false;
++
+     public function __construct(public readonly Mutation $mutation) {}
+ 
+     public function __destruct()
+@@ -366,6 +369,17 @@ class MutationTest
+                 return false;
+             }
+         } catch (ProcessTimedOutException) {
++            // A child that runs past its limit once is run again, and scored a timeout only when
++            // the second attempt runs past it too. A transient slowdown of the machine passes on
++            // the second attempt; a mutant that really loops times out twice. See
++            // UAMS-Web/patches-pest-plugin-mutate#30.
++            if (! $this->retriedAfterTimeout) {
++                $this->retriedAfterTimeout = true;
++                $this->process = $this->process->restart();
++
++                return false;
++            }
++
+             unlink($this->reportPath);
+             $this->updateResult(MutationTestResult::Timeout);
+ 

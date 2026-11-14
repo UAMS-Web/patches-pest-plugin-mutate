@@ -47,7 +47,7 @@ for patch in $patches; do
 done
 echo "$applied patches applied"
 
-for script in timeout crash patchwork; do
+for script in timeout crash patchwork retry; do
     php -r 'require $argv[1]; exit(require $argv[2]);' "$work/vendor/autoload.php" "$root/tests/$script.php" 2>&1 || {
         status=$?
         exit "$status"
