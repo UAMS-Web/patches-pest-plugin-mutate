@@ -56,6 +56,11 @@ $expect('failure that printed no failed test', 'refused', $scored('echo "boot fa
 $expect('fatal error naming the test it was running (scored a kill)', 'Tested', $scored('fwrite(STDERR, "Fatal error: Allowed memory size of 1073741824 bytes exhausted (tried to allocate 671088640 bytes) in /x.php on line 493\nFatal error: Premature end of PHP process when running P\\Tests\\Unit\\FooTest::__pest_evaluable_it_x@dataset \"a\" with data (1).\n"); exit(255);'));
 // A child that dies before any test starts (a missing dataset while collecting tests) names no test: refused.
 $expect('fatal error before any test started', 'refused', $scored('fwrite(STDERR, "Fatal error: Uncaught Pest\\Exceptions\\DatasetMissing: A test with the name `x` does not have a dataset named `y`.\n"); exit(255);'));
+// A child that dies of a compile-time fatal error in the mutated file (`[] = $x;` from `[$a] = $x;`) names that
+// file and cannot have passed: a kill. A fatal error in any other file is a boot failure: refused. See #40.
+$mutated = var_export(realpath(__FILE__), true);
+$expect('compile error in the mutated file (scored a kill)', 'Tested', $scored('fwrite(STDERR, "PHP Fatal error:  Cannot use empty list in ".'.$mutated.'." on line 199\n"); exit(255);'));
+$expect('compile error in another file', 'refused', $scored('fwrite(STDERR, "PHP Fatal error:  Cannot use empty list in /elsewhere/Other.php on line 199\n"); exit(255);'));
 // A child that exits 0 with no report ran no test: refused.
 $expect('success that wrote no report', 'refused', $scored('exit(0);'));
 
