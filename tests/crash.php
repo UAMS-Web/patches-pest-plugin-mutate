@@ -61,6 +61,10 @@ $expect('fatal error before any test started', 'refused', $scored('fwrite(STDERR
 $mutated = var_export(realpath(__FILE__), true);
 $expect('compile error in the mutated file (scored a kill)', 'Tested', $scored('fwrite(STDERR, "PHP Fatal error:  Cannot use empty list in ".'.$mutated.'." on line 199\n"); exit(255);'));
 $expect('compile error in another file', 'refused', $scored('fwrite(STDERR, "PHP Fatal error:  Cannot use empty list in /elsewhere/Other.php on line 199\n"); exit(255);'));
+// A child that runs past PHP's time limit (a mutant that never leaves a loop, under a test suite that calls set_time_limit())
+// did not pass: a kill. See #41.
+$expect('time limit exceeded (scored a kill)', 'Tested', $scored('fwrite(STDERR, "PHP Fatal error:  Maximum execution time of 2 seconds exceeded in /x/Foo.php on line 12\n"); exit(255);'));
+$expect('time limit exceeded, plain fatal line', 'Tested', $scored('echo "Fatal error: Maximum execution time of 1 second exceeded in /x/Foo.php on line 12\n"; exit(255);'));
 // A child that exits 0 with no report ran no test: refused.
 $expect('success that wrote no report', 'refused', $scored('exit(0);'));
 
