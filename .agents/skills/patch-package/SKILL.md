@@ -48,6 +48,12 @@ reason to label the whole ticket `hitl`, which would leave the preparation waiti
 too (`UAMS-Web/uams-statamic-archive#2772`). There is no decision to make either, so the
 [`design-decision-forks`](../rule-design-decision-forks/SKILL.md) rule does not apply to them.
 
+**Tickets 2 and 3 write the post in the upstream repository's own templates.** The issue in ticket 2
+and the pull request in ticket 3 use the target's `.github/ISSUE_TEMPLATE/` and
+`.github/PULL_REQUEST_TEMPLATE.md` (or the organization's `.github` defaults), as the
+[`verify-claims-before-a-third-party-post`](../rule-verify-claims-before-a-third-party-post/SKILL.md)
+rule requires; the rule owns the instruction, including the field-that-cannot-be-filled and no-template cases.
+
 **Tickets 2 and 3 verify the draft before the approval is requested.** The
 [`verify-claims-before-a-third-party-post`](../rule-verify-claims-before-a-third-party-post/SKILL.md)
 rule owns the requirement: every claim in the draft is checked three ways, each by an
