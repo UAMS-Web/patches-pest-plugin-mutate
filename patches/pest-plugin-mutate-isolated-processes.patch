@@ -83,7 +83,7 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
              $this->updateResult(MutationTestResult::Timeout);
  
              Facade::instance()->emitter()->mutationTimedOut($this);
-@@ -338,6 +360,35 @@ class MutationTest
+@@ -338,6 +360,36 @@ class MutationTest
              return true;
          }
  
@@ -93,14 +93,15 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
 +        $output = $this->process->getOutput().$this->process->getErrorOutput();
 +        // A child that crashes mid-test (a stack overflow, or memory exhausted by a mutant) writes no report but prints the failed test, or PHPUnit's
 +        // "Premature end of PHP process when running <test>" for a fatal error (colored, so the escapes are stripped to read it), and is a kill. So is a
-+        // fatal error that names the mutated file (code that does not compile cannot pass), and so is a child that runs past PHP's time limit. A child that exits 0, or fails without naming a test it ran or
++        // fatal error that names the mutated file (code that does not compile cannot pass), and so is a child that runs past PHP's time limit or exhausts its hard memory limit. A child that exits 0, or fails without naming a test it ran or
 +        // the mutated file (a boot failure), ran no test and is refused. Each alternative below is one accepted form; add the next one to the list.
-+        // See UAMS-Web/patches-pest-plugin-mutate#27, #34, #40 and #41.
++        // See UAMS-Web/patches-pest-plugin-mutate#27, #34, #40, #41 and #45.
 +        $killedOutput = [
 +            'Tests:.*\b(?:failed|errors?)\b',
 +            'Fatal error: Premature end of PHP process when running \S',
 +            '(?:PHP )?Fatal error:.* in '.preg_quote((string) $this->mutation->file->getRealPath(), '/').' on line \d+',
 +            '(?:(?:PHP )?Fatal error:\s+)?Maximum execution time of \d+ seconds? exceeded',
++            'Hard memory limit of \d+ bytes exhausted',
 +        ];
 +        if (
 +            (

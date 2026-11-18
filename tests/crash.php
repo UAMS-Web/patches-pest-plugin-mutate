@@ -65,6 +65,8 @@ $expect('compile error in another file', 'refused', $scored('fwrite(STDERR, "PHP
 // did not pass: a kill. See #41.
 $expect('time limit exceeded (scored a kill)', 'Tested', $scored('fwrite(STDERR, "PHP Fatal error:  Maximum execution time of 2 seconds exceeded in /x/Foo.php on line 12\n"); exit(255);'));
 $expect('time limit exceeded, plain fatal line', 'Tested', $scored('echo "Fatal error: Maximum execution time of 1 second exceeded in /x/Foo.php on line 12\n"; exit(255);'));
+// A child that exhausts the hard memory limit (a mutant that makes a loop grow an array without end) did not pass: a kill. See #45.
+$expect('hard memory limit exhausted (scored a kill)', 'Tested', $scored('echo "Hard memory limit of 3221225472 bytes exhausted (tried to allocate 262144 bytes) in /x/Foo.php on line 12\n"; exit(137);'));
 // A child that exits 0 with no report ran no test: refused.
 $expect('success that wrote no report', 'refused', $scored('exit(0);'));
 
