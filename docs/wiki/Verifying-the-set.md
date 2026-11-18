@@ -1,10 +1,10 @@
 Written against v1.4.3.
 
-The set is verified by applying the 14 patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`, then driving the patched code. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
+The set is verified by applying the 14 patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`, then driving the patched code.
 
 ## What runs, and where
 
-`tests/check.sh` does this on every pull request, on each push to `main` and once a week, in the `Patches` workflow (`.github/workflows/patches.yml`). Run the same script locally for the same check.
+`tests/check.sh` does this on every pull request, on each push to `main` and once a week, in the `Patches` workflow (`.github/workflows/patches.yml`). The workflow's job is skipped when the `RUN_REMOTE_CI` variable is `false`; run the same script locally for the same check.
 
 1. It installs the pinned upstream into a temporary directory.
 2. It applies every patch `composer.json` lists, in order, and fails if one does not apply.
@@ -24,6 +24,10 @@ The set is verified by applying the 14 patches in order to the `v5.0.2` tag of `
 - **`tests/constants.php`** drives `MutationGenerator` with a covered class that holds a constant array. With the covered lines of that class as `linesToMutate`, as `--covered-only` passes them, both constant mutants must be generated; a class with no covered line must get none; with no filter the population is unchanged. With `SKIP_PATCH=pest-plugin-mutate-class-constant-coverage.patch` the first case generates none and the check fails.
 
 The other nine patches are checked for applying only.
+
+## A check by hand
+
+After the 14 patches are applied in order, applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail. `tests/check.sh` does not run this; it applies each patch once.
 
 ## What this means for a consumer
 
