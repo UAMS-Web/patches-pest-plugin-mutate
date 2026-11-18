@@ -47,3 +47,30 @@ diff --git a/src/Mutation.php b/src/Mutation.php
              $endLine,
              self::diff($newlyRenderedOriginalSource, $modifiedSource),
              $modifiedSourcePath,
+diff --git a/src/Support/NodeVisitor.php b/src/Support/NodeVisitor.php
+--- a/src/Support/NodeVisitor.php
++++ b/src/Support/NodeVisitor.php
+@@ -64,7 +64,22 @@
+             return null;
+         }
+ 
+-        if ($this->linesToMutate !== [] && array_filter(range($node->getStartLine(), $node->getEndLine()), fn (int $line): bool => in_array($line, $this->linesToMutate, true)) === []) {
++        // A constant initializer has no executable coverage line, so a node inside one counts as covered when any line of its class is.
++        $startLine = $node->getStartLine();
++        $endLine = $node->getEndLine();
++        $ancestor = $node;
++        while (($ancestor = $ancestor->getAttribute('parent')) instanceof Node) {
++            if ($ancestor instanceof Node\Const_ && $ancestor->getAttribute('parent') instanceof Node\Stmt\ClassConst) {
++                $class = $ancestor->getAttribute('parent')->getAttribute('parent');
++                if ($class instanceof Node\Stmt\ClassLike) {
++                    $startLine = $class->getStartLine();
++                    $endLine = $class->getEndLine();
++                }
++                break;
++            }
++        }
++
++        if ($this->linesToMutate !== [] && array_filter(range($startLine, $endLine), fn (int $line): bool => in_array($line, $this->linesToMutate, true)) === []) {
+             return null;
+         }
+ 
