@@ -46,21 +46,9 @@ Applied in this order, which is the order in `composer.json`. A later patch is c
 
 Each description names the ticket that tracks the upstream fix, or the consumer ticket that moved the patch here where no upstream ticket exists.
 
-## Versioning
+## Versioning and verification
 
-| Change | Release |
-| --- | --- |
-| A patch's content changes, same upstream pin | patch |
-| A patch is added or retired, or the pin moves within the upstream major | minor |
-| The pin moves to a new upstream major | major |
-
-## Verifying the set
-
-Apply the fourteen patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`. Applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail.
-
-`tests/check.sh` does this on every pull request, in `.github/workflows/patches.yml`. It installs the pinned upstream, applies every patch `composer.json` lists and fails if one does not apply. It then drives the real `MutationTest::start()` and asserts the time limit the mutant-timeout patch gives a child: for a 3.9 s initial suite, 8 s in a serial run and 56 s at 12 processes. `tests/crash.php` drives `hasFinished()` with ten children: one that crashes after printing a failed test, one killed by a fatal error that prints PHPUnit's premature-end line naming its test, one that dies of a compile error in the mutated file, two that run past PHP's time limit, and one that exhausts the hard memory limit, must score a kill; one that fails without a failed test, one that dies of a fatal error before any test starts, one that dies of a fatal error in another file, and one that exits 0 with no report must be refused. With the timeout patch left out (`SKIP_PATCH=pest-plugin-mutate-mutant-timeout.patch tests/check.sh`) the 12-process figure is 8 s and the check fails.
-
-A consumer therefore needs no test of its own that asserts the mutant-timeout patch is present in `vendor/`: this repository's check fails when the patch stops applying to the pin or stops changing the limit. `tests/patchwork.php` also checks that Patchwork is back in front of the stream wrapper after a pass-through read, and `tests/retry.php` drives `hasFinished()` with a child that runs past its limit: one that times out once and is killed on the second attempt, and one that times out once and passes on it, are scored by the second attempt, and one that times out twice is scored a timeout. With the retry patch left out (`SKIP_PATCH=pest-plugin-mutate-mutant-timeout-retry.patch tests/check.sh`) the first two cases score a timeout and the check fails. `tests/constants.php` drives `MutationGenerator` with a covered class that holds a constant array: with the covered lines of that class as `linesToMutate`, as `--covered-only` passes them, both constant mutants must be generated, a class with no covered line must get none, and with no filter the population is unchanged. With the class-constant patch left out (`SKIP_PATCH=pest-plugin-mutate-class-constant-coverage.patch tests/check.sh`) the first case generates none and the check fails. The other nine patches are checked for applying only.
+The [wiki](https://github.com/UAMS-Web/patches-pest-plugin-mutate/wiki) documents each patch, using the package, which change makes which release ([Versioning](https://github.com/UAMS-Web/patches-pest-plugin-mutate/wiki/Versioning)), and what `tests/check.sh` applies and asserts on every pull request ([Verifying the set](https://github.com/UAMS-Web/patches-pest-plugin-mutate/wiki/Verifying-the-set)). Its pages are kept in [`docs/wiki/`](docs/wiki/) and published from there.
 
 ## License
 
