@@ -1,6 +1,6 @@
 Written against v1.4.3.
 
-The set is verified by applying the 14 patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`, then driving the patched code.
+The set is verified by applying the 15 patches in order to the `v5.0.2` tag of `pestphp/pest-plugin-mutate` with `git apply`, then driving the patched code.
 
 ## What runs, and where
 
@@ -22,12 +22,13 @@ The set is verified by applying the 14 patches in order to the `v5.0.2` tag of `
 - **`tests/patchwork.php`** checks that Patchwork is back in front of the stream wrapper after a pass-through read.
 - **`tests/retry.php`** drives `hasFinished()` with a child that runs past its limit. One that times out once and is killed on the second attempt, and one that times out once and passes on it, are scored by the second attempt; one that times out twice is scored a timeout. With `SKIP_PATCH=pest-plugin-mutate-mutant-timeout-retry.patch` the first two cases score a timeout and the check fails.
 - **`tests/constants.php`** drives `MutationGenerator` with a covered class that holds a constant array. With the covered lines of that class as `linesToMutate`, as `--covered-only` passes them, both constant mutants must be generated; a class with no covered line must get none; with no filter the population is unchanged. With `SKIP_PATCH=pest-plugin-mutate-class-constant-coverage.patch` the first case generates none and the check fails.
+- **`tests/unreadable.php`** checks what the stat family reports for a mode-`000` file, a missing path, a dangling symlink and the source file, with no wrapper and with the mutation stream wrapper started. With the wrapper, `is_file()` and `file_exists()` must report the unreadable file present, as they do without it; a missing path must report absent, calling no error handler for an existence check and one, unsilenced, for `stat()` or `lstat()`; `is_link()` must report the dangling symlink; and including the source file must load the override. With `SKIP_PATCH=pest-plugin-mutate-url-stat-unreadable.patch` the unreadable file reports absent and the check fails. Where mode `000` does not stop a read (as root, or on Windows) the unreadable rows are skipped, and fail when `CI` is set.
 
 The other nine patches are checked for applying only.
 
 ## A check by hand
 
-After the 14 patches are applied in order, applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail. `tests/check.sh` does not run this; it applies each patch once.
+After the 15 patches are applied in order, applying `pest-plugin-mutate-windows-filter-length.patch` a second time must fail. `tests/check.sh` does not run this; it applies each patch once.
 
 ## What this means for a consumer
 
