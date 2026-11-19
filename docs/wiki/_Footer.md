@@ -1,3 +1,3 @@
 [Home](Home.md) | [Using the patches](Using-the-patches.md) | [Patches](Patches.md) | [Versioning](Versioning.md) | [Verifying the set](Verifying-the-set.md) | [Adding or retiring a patch](Adding-or-retiring-a-patch.md) | [Troubleshooting](Troubleshooting.md) | [README](https://github.com/UAMS-Web/patches-pest-plugin-mutate#readme) | [Repository](https://github.com/UAMS-Web/patches-pest-plugin-mutate)
 
-Written against v1.4.3. Edit these pages in [`docs/wiki/`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/tree/main/docs/wiki) through a pull request; edits made here are overwritten on the next publish.
+Written against v1.5.0. Edit these pages in [`docs/wiki/`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/tree/main/docs/wiki) through a pull request; edits made here are overwritten on the next publish.

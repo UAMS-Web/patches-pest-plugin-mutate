@@ -1,4 +1,4 @@
-Written against v1.4.3.
+Written against v1.5.0.
 
 The patches are applied in the order they appear under `extra.patches` in `composer.json`, which is the order below. A later patch is cut against the output of the earlier ones, so none is reordered without re-cutting those after it. Every patch is written against `pestphp/pest-plugin-mutate` `5.0.2`, and every one is temporary: it retires once a fixed upstream release ships (see [Adding or retiring a patch](Adding-or-retiring-a-patch.md)).
 

@@ -1,4 +1,4 @@
-Written against v1.4.3.
+Written against v1.5.0.
 
 This page is for changing the package itself. The detailed procedure is the `patch-package` skill, delivered to this repository under `.claude/skills/patch-package/`; this page keeps the rules a change has to respect.
 
