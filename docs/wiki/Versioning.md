@@ -1,4 +1,4 @@
-Written against v1.4.3.
+Written against v1.5.0.
 
 A consumer pins this package by release, so each kind of change maps to one kind of release.
 

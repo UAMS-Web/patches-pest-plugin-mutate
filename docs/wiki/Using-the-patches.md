@@ -1,4 +1,4 @@
-Written against v1.4.3.
+Written against v1.5.0.
 
 This page takes a consumer repository from nothing to a Composer install that applies the patches in this package. At the end, `vendor/pestphp/pest-plugin-mutate` carries every patch listed on [Patches](Patches.md).
 
