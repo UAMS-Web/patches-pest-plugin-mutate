@@ -1,0 +1,25 @@
+diff --git a/src/Support/StreamWrapper.php b/src/Support/StreamWrapper.php
+--- a/src/Support/StreamWrapper.php
++++ b/src/Support/StreamWrapper.php
+@@ -278,16 +278,15 @@ class StreamWrapper
+      */
+     public function url_stat(string $path, int $flags): array|bool
+     {
++        // Answer as the plain file:// handler does: stat() alone decides, so a file that exists but
++        // cannot be read is still reported present. PHP reports a failed stat to a caller that did
++        // not pass STREAM_URL_STAT_QUIET, so the inner call stays silent rather than warning twice.
+         return $this->withOriginalWrapper(function () use ($path, $flags): false|array {
+-            if (is_readable($path) === false) {
+-                return false;
+-            }
+-
+             if (($flags & STREAM_URL_STAT_LINK) !== 0) {
+-                return lstat($path);
++                return @lstat($path);
+             }
+ 
+-            return stat($path);
++            return @stat($path);
+         });
+     }
+ 
