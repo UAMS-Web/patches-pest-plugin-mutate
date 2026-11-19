@@ -1,4 +1,3 @@
-| 15 | `pest-plugin-mutate-url-stat-unreadable.patch` | `Support/StreamWrapper.php` | [`UAMS-Web/patches-pest-plugin-mutate#52`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues/52) |
 Written against v1.4.3.
 
 The patches are applied in the order they appear under `extra.patches` in `composer.json`, which is the order below. A later patch is cut against the output of the earlier ones, so none is reordered without re-cutting those after it. Every patch is written against `pestphp/pest-plugin-mutate` `5.0.2`, and every one is temporary: it retires once a fixed upstream release ships (see [Adding or retiring a patch](Adding-or-retiring-a-patch.md)).
@@ -23,6 +22,7 @@ Each entry names the ticket that tracks the upstream fix, or the consumer ticket
 | 12 | `pest-plugin-mutate-mutant-timeout.patch` | `MutationTest.php` | [`UAMS-Web/patches-pest-plugin-mutate#2`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues/2) |
 | 13 | `pest-plugin-mutate-stream-wrapper-patchwork.patch` | `Support/StreamWrapper.php` | [`UAMS-Web/patches-pest-plugin-mutate#31`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues/31) |
 | 14 | `pest-plugin-mutate-mutant-timeout-retry.patch` | `MutationTest.php` | [`UAMS-Web/patches-pest-plugin-mutate#30`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues/30) |
+| 15 | `pest-plugin-mutate-url-stat-unreadable.patch` | `Support/StreamWrapper.php` | [`UAMS-Web/patches-pest-plugin-mutate#52`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues/52) |
 
 ## What each patch does
 
