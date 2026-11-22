@@ -1,18 +1,21 @@
 diff --git a/src/MutationTest.php b/src/MutationTest.php
-index 6299c73..ed00100 100644
+index 32935b8..607d510 100644
 --- a/src/MutationTest.php
 +++ b/src/MutationTest.php
-@@ -41,6 +41,9 @@ class MutationTest
+@@ -41,6 +41,12 @@ class MutationTest
  
      private string $reportPath;
  
 +    /** Whether this child has already timed out once and been run again. See UAMS-Web/patches-pest-plugin-mutate#30. */
 +    private bool $retriedAfterTimeout = false;
 +
++    /** Whether this child has timed out twice and been run a third time without the mutation. See UAMS-Web/patches-pest-plugin-mutate#56. */
++    private bool $checkedWithoutMutation = false;
++
      public function __construct(public readonly Mutation $mutation) {}
  
      public function __destruct()
-@@ -366,6 +369,17 @@ class MutationTest
+@@ -366,6 +372,44 @@ class MutationTest
                  return false;
              }
          } catch (ProcessTimedOutException) {
@@ -27,6 +30,33 @@ index 6299c73..ed00100 100644
 +                return false;
 +            }
 +
++            // A child that ran past its limit twice is run once more with the mutation switched
++            // off. A mutant that loops or stalls a test is the cause only when the unmutated run
++            // finishes inside the limit, and that is a timeout. When the unmutated run runs past
++            // it too, a slow covering test file is the cause: the fast covering tests ran first
++            // and did not catch the mutant, so it escaped and is scored untested, not as caught.
++            // See UAMS-Web/patches-pest-plugin-mutate#56.
++            if (! $this->checkedWithoutMutation) {
++                $this->checkedWithoutMutation = true;
++                $this->process = $this->process->restart(null, [
++                    Mutate::ENV_MUTATION_TESTING => false,
++                    Mutate::ENV_MUTATION_FILE => false,
++                ]);
++
++                return false;
++            }
++
++            unlink($this->reportPath);
++            $this->updateResult(MutationTestResult::Untested);
++
++            Facade::instance()->emitter()->mutationEscaped($this);
++
++            $this->finish = microtime(true);
++
++            return true;
++        }
++
++        if ($this->checkedWithoutMutation) {
              unlink($this->reportPath);
              $this->updateResult(MutationTestResult::Timeout);
  

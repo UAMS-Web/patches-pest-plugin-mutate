@@ -39,7 +39,7 @@ Each entry names the ticket that tracks the upstream fix, or the consumer ticket
 11. **Ignore an annotated statement.** Skips a node whose own comment carries a matching `@pest-mutate-ignore` marker, including when the traverser still leaves that node.
 12. **Mutant timeout.** Sizes a mutant child's time limit from the serial work the initial suite stands for, so a `--parallel` run cannot score a mutant a timeout that no test caused.
 13. **Stream wrapper and Patchwork.** Keeps Patchwork in front of the mutation stream wrapper after a pass-through read, so a function a test mocks is still redefined in a mutant child that logs to junit.
-14. **Mutant timeout retry.** Runs a mutant child again when it times out once, and scores a timeout only when the second attempt times out too, so a transient slowdown of the machine cannot keep `--min=100` out of reach.
+14. **Mutant timeout retry.** Runs a mutant child again when it times out once, and scores a timeout only when the second attempt times out too and a third run without the mutation finishes inside the limit. A mutant that a slow covering test file overruns is scored untested, so a transient slowdown cannot keep `--min=100` out of reach and a slow file cannot score a mutant caught.
 15. **Unreadable files in `url_stat()`.** Reports an existing file that cannot be read as present from the mutation stream wrapper's `url_stat()`, as the plain `file://` handler does, so code that reads it behind an `is_file()` or `file_exists()` check reaches the read in a mutant child. A missing path is still reported absent.
 
 Related: [Verifying the set](Verifying-the-set.md), [Versioning](Versioning.md), [Adding or retiring a patch](Adding-or-retiring-a-patch.md).
