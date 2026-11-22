@@ -93,9 +93,9 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
 +        $output = $this->process->getOutput().$this->process->getErrorOutput();
 +        // A child that crashes mid-test (a stack overflow, or memory exhausted by a mutant) writes no report but prints the failed test, or PHPUnit's
 +        // "Premature end of PHP process when running <test>" for a fatal error (colored, so the escapes are stripped to read it), and is a kill. So is a
-+        // fatal error that names the mutated file (code that does not compile cannot pass), and so is a child that runs past PHP's time limit or exhausts its hard memory limit. A child that exits 0, or fails without naming a test it ran or
++        // fatal error that names the mutated file (code that does not compile cannot pass), and so is a child that runs past PHP's time limit or exhausts its hard memory limit, and so is a child that exits with the Windows stack-overflow status (0xC00000FD, -1073741571), which prints nothing. A child that exits 0, or fails without naming a test it ran or
 +        // the mutated file (a boot failure), ran no test and is refused. Each alternative below is one accepted form; add the next one to the list.
-+        // See UAMS-Web/patches-pest-plugin-mutate#27, #34, #40, #41 and #45.
++        // See UAMS-Web/patches-pest-plugin-mutate#27, #34, #40, #41, #45 and #58.
 +        $killedOutput = [
 +            'Tests:.*\b(?:failed|errors?)\b',
 +            'Fatal error: Premature end of PHP process when running \S',
@@ -109,7 +109,7 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
 +                ! $document->loadXML($report, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING) ||
 +                $document->getElementsByTagName('testcase')->length === 0
 +            ) &&
-+            ($this->process->isSuccessful() || preg_match('/^\s*(?:'.implode('|', $killedOutput).')/mi', preg_replace('/\e\[[0-9;]*m/', '', $output)) !== 1)
++            ($this->process->isSuccessful() || ($this->process->getExitCode() !== -1073741571 && preg_match('/^\s*(?:'.implode('|', $killedOutput).')/mi', preg_replace('/\e\[[0-9;]*m/', '', $output)) !== 1))
 +        ) {
 +            throw new RuntimeException(
 +                'Mutation test process did not report any executed tests (exit '.$this->process->getExitCode().').'.PHP_EOL.
