@@ -1,5 +1,6 @@
 diff --git a/src/Autoload.php b/src/Autoload.php
 new file mode 100644
+index 0000000..425d28b
 --- /dev/null
 +++ b/src/Autoload.php
 @@ -0,0 +1,18 @@
@@ -22,6 +23,7 @@ new file mode 100644
 +    define('PEST_MUTATE_STREAM_WRAPPER_STARTED', true);
 +}
 diff --git a/src/MutationTest.php b/src/MutationTest.php
+index 7e22ba3..36c57a9 100644
 --- a/src/MutationTest.php
 +++ b/src/MutationTest.php
 @@ -4,6 +4,7 @@ declare(strict_types=1);
@@ -32,7 +34,7 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
  use ParaTest\Options;
  use Pest\Mutate\Event\Facade;
  use Pest\Mutate\Plugins\Mutate;
-@@ -38,8 +39,21 @@ class MutationTest
+@@ -38,8 +39,25 @@ class MutationTest
  
      private Process $process;
  
@@ -49,12 +51,16 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
 +        if (isset($this->reportPath) && file_exists($this->reportPath)) {
 +            unlink($this->reportPath);
 +        }
++
++        if (isset($this->reportPath) && file_exists($this->reportPath.'.events')) {
++            unlink($this->reportPath.'.events');
++        }
 +    }
 +
      public function getId(): string
      {
          return $this->mutation->id;
-@@ -181,6 +195,12 @@ class MutationTest
+@@ -181,6 +199,12 @@ class MutationTest
          }
          $filteredArguments = $withoutParallelRunnerOptions;
  
@@ -67,15 +73,16 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
          // TODO: filter arguments to remove unnecessary stuff (Teamcity, Coverage, etc.)
          $process = new Process(
              command: [
-@@ -194,6 +214,7 @@ class MutationTest
+@@ -194,6 +218,8 @@ class MutationTest
                  // hasFinished() scores it killed. See uams-statamic#2524. The filter is kept in
                  // $filter so the time limit below can tell whether it was widened (#3202).
                  '--filter='.($filter = self::childFilter($filters, [...$filteredArguments, '--bail'], DIRECTORY_SEPARATOR === '\\', $this->mutation->file->getRealPath().':'.$this->mutation->startLine)),
++                '--log-events-text='.$this->reportPath.'.events',
 +                '--log-junit='.$this->reportPath,
              ],
              env: $envs,
              timeout: self::childTimeout($this->initialTestSuiteDuration(), $filter !== implode('|', $filters)),
-@@ -329,6 +350,7 @@ class MutationTest
+@@ -329,6 +355,7 @@ class MutationTest
                  return false;
              }
          } catch (ProcessTimedOutException) {
@@ -83,7 +90,7 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
              $this->updateResult(MutationTestResult::Timeout);
  
              Facade::instance()->emitter()->mutationTimedOut($this);
-@@ -338,6 +360,36 @@ class MutationTest
+@@ -338,6 +365,40 @@ class MutationTest
              return true;
          }
  
@@ -91,11 +98,15 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
 +        unlink($this->reportPath);
 +        $document = new DOMDocument;
 +        $output = $this->process->getOutput().$this->process->getErrorOutput();
++        // PHPUnit appends an event line as each one happens, so a child that ends through the code's own `exit` mid-test leaves a
++        // `Test Prepared` line with no `Test Finished` after it, while a child that dies before any test starts leaves none.
++        $events = (string) @file_get_contents($this->reportPath.'.events');
++        $endedMidTest = preg_match_all('/^Test Prepared \(/m', $events) > preg_match_all('/^Test Finished \(/m', $events);
 +        // A child that crashes mid-test (a stack overflow, or memory exhausted by a mutant) writes no report but prints the failed test, or PHPUnit's
 +        // "Premature end of PHP process when running <test>" for a fatal error (colored, so the escapes are stripped to read it), and is a kill. So is a
-+        // fatal error that names the mutated file (code that does not compile cannot pass), and so is a child that runs past PHP's time limit or exhausts its hard memory limit, and so is a child that exits with the Windows stack-overflow status (0xC00000FD, -1073741571), which prints nothing. A child that exits 0, or fails without naming a test it ran or
++        // fatal error that names the mutated file (code that does not compile cannot pass), and so is a child that runs past PHP's time limit or exhausts its hard memory limit, and so is a child that exits with the Windows stack-overflow status (0xC00000FD, -1073741571), which prints nothing, and so is a child that ends through the code's own exit with a test still running (the events log shows it). A child that exits 0, or fails without naming a test it ran or
 +        // the mutated file (a boot failure), ran no test and is refused. Each alternative below is one accepted form; add the next one to the list.
-+        // See UAMS-Web/patches-pest-plugin-mutate#27, #34, #40, #41, #45 and #58.
++        // See UAMS-Web/patches-pest-plugin-mutate#27, #34, #40, #41, #45, #58 and #60.
 +        $killedOutput = [
 +            'Tests:.*\b(?:failed|errors?)\b',
 +            'Fatal error: Premature end of PHP process when running \S',
@@ -109,7 +120,7 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
 +                ! $document->loadXML($report, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING) ||
 +                $document->getElementsByTagName('testcase')->length === 0
 +            ) &&
-+            ($this->process->isSuccessful() || ($this->process->getExitCode() !== -1073741571 && preg_match('/^\s*(?:'.implode('|', $killedOutput).')/mi', preg_replace('/\e\[[0-9;]*m/', '', $output)) !== 1))
++            ($this->process->isSuccessful() || (! $endedMidTest && $this->process->getExitCode() !== -1073741571 && preg_match('/^\s*(?:'.implode('|', $killedOutput).')/mi', preg_replace('/\e\[[0-9;]*m/', '', $output)) !== 1))
 +        ) {
 +            throw new RuntimeException(
 +                'Mutation test process did not report any executed tests (exit '.$this->process->getExitCode().').'.PHP_EOL.
@@ -121,6 +132,7 @@ diff --git a/src/MutationTest.php b/src/MutationTest.php
              $this->updateResult(MutationTestResult::Untested);
  
 diff --git a/src/Plugins/Mutate.php b/src/Plugins/Mutate.php
+index 8a3ddc1..ff90c78 100644
 --- a/src/Plugins/Mutate.php
 +++ b/src/Plugins/Mutate.php
 @@ -80,9 +80,13 @@ class Mutate implements AddsOutput, Bootable, HandlesArguments

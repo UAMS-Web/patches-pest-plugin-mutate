@@ -78,6 +78,57 @@ $expect('silent exit 255', 'refused', $scored('exit(255);'));
 if (DIRECTORY_SEPARATOR === '\\') {
     $expect('silent exit with another Windows status', 'refused', $scored('exit(-1073741819);'));
 }
+// A child that ends through the code's own `exit` while a test runs (a mutant removes the call before an `exit;`) prints nothing and
+// writes no report, and PHPUnit's events log is what shows a test was running. See #60.
+$events = static fn (string $lines): string => 'foreach ($argv as $a) { if (str_starts_with($a, "--log-events-text=")) { file_put_contents(substr($a, 18), '.var_export($lines, true).'); } }';
+$started = "Test Runner Started\nTest Prepared (Tests\ExampleTest::test_it)\n";
+$expect('silent exit while a test runs (scored a kill)', 'Tested', $scored($events($started).' exit(2);'));
+// A control: the same silent exit before any test started names no test, so it stays refused.
+$expect('silent exit before any test started', 'refused', $scored($events("Test Runner Started\nTest Suite Loaded (1 tests)\n").' exit(2);'));
+// Every test that started also finished, so the silent exit is not inside one: refused.
+$expect('silent exit after every test finished', 'refused', $scored($events($started."Test Finished (Tests\ExampleTest::test_it)\n").' exit(2);'));
+
+// The same through a real PHPUnit child, which checks that it accepts the `--log-events-text` option the patched command line now carries.
+// PHPUnit's own output for a child that exits mid-test already names the test, so these two do not need the events log to pass; the
+// fixtures above are what do.
+$phpunit = dirname((new ReflectionClass(Composer\Autoload\ClassLoader::class))->getFileName(), 2).'/phpunit/phpunit/phpunit';
+$fixtureDir = sys_get_temp_dir().'/exit-fixture-'.getmypid();
+@mkdir($fixtureDir);
+$fixture = $fixtureDir.'/ExampleTest.php';
+// The child is given Pest's `--bail`, which PHPUnit does not know, so a wrapper drops it and runs PHPUnit.
+$wrapper = sys_get_temp_dir().'/exit-wrapper-'.getmypid().'.php';
+file_put_contents($wrapper, '<?php $_SERVER["argv"] = array_values(array_filter($_SERVER["argv"], static fn (string $a): bool => $a !== "--bail")); $argv = $_SERVER["argv"]; require '.var_export($phpunit, true).';');
+$real = static function (string $body) use ($wrapper, $fixture): string {
+    file_put_contents($fixture, "<?php\nnamespace Tests;\nfinal class ExampleTest extends \PHPUnit\Framework\TestCase\n{\n    public function test_it(): void\n    {\n        ".$body."\n    }\n}\n");
+
+    $telemetry = new TelemetryRepository;
+    $telemetry->initialTestSuiteDuration(3.9);
+    Container::getInstance()->add(TelemetryRepository::class, $telemetry);
+
+    $path = __FILE__;
+    $mutation = new Mutation(new SplFileInfo($path, '', basename($path)), 'id', 'mutator', 1, 1, '', $path);
+    $configuration = new Configuration(false, [], [], [], [], false, 1, false, null, false, false, false, null, false, false);
+
+    $test = new MutationTest($mutation);
+    $covered = [realpath($path) => [1 => ['\Tests\ExampleTest::test_it']]];
+    $test->start($covered, $configuration, [PHP_BINARY, $wrapper, '--no-configuration', $fixture]);
+
+    try {
+        for ($i = 0; $i < 200 && ! $test->hasFinished(); $i++) {
+            usleep(50_000);
+        }
+    } catch (RuntimeException) {
+        return 'refused';
+    }
+
+    return $test->result()->name;
+};
+$expect('real PHPUnit child that calls exit in a test (scored a kill)', 'Tested', $real('exit;'));
+$expect('real PHPUnit child whose test passes', 'Untested', $real('$this->assertTrue(true);'));
+@unlink($fixture);
+@rmdir($fixtureDir);
+@unlink($wrapper);
+
 // A child that exits 0 with no report ran no test: refused.
 $expect('success that wrote no report', 'refused', $scored('exit(0);'));
 
