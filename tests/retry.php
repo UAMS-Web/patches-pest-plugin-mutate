@@ -5,8 +5,8 @@ declare(strict_types=1);
 // Drives the real MutationTest::hasFinished() of the patched tree with a child that runs past its
 // limit, and reads how the mutant is scored. Run by tests/check.sh with the patched tree's
 // autoloader already loaded. Exits 0 when every case holds, 1 otherwise. A limit is at least 5 s,
-// so the cases take about 25 s together.
-// See UAMS-Web/patches-pest-plugin-mutate#30.
+// so the cases take about 45 s together.
+// See UAMS-Web/patches-pest-plugin-mutate#30 and #56.
 
 use Pest\Mutate\Mutation;
 use Pest\Mutate\MutationTest;
@@ -38,7 +38,7 @@ $scored = static function (string $code): string {
     $test->start($covered, $configuration, [PHP_BINARY, '-r', $code, '--']);
 
     try {
-        for ($i = 0; $i < 400 && ! $test->hasFinished(); $i++) {
+        for ($i = 0; $i < 800 && ! $test->hasFinished(); $i++) {
             usleep(50_000);
         }
     } catch (RuntimeException) {
@@ -63,7 +63,20 @@ $expect('timed out once, then passed on the second attempt', 'Untested', $scored
 ));
 @unlink($marker);
 
-// Slow on every attempt: a timeout, as before.
-$expect('timed out twice', 'Timeout', $scored('sleep(30);'));
+// Slow on both attempts only while the mutation is on (the child runs again without it, and then finishes): the mutant caused
+// the hang, so a timeout.
+$expect('timed out twice, finishes without the mutation', 'Timeout', $scored(
+    'if (getenv("PEST_MUTATION_TESTING") !== false) { sleep(30); } foreach ($argv as $a) { if (str_starts_with($a, "--log-junit=")) { file_put_contents(substr($a, 12), "<testsuites><testsuite><testcase name=\\"t\\"/></testsuite></testsuites>"); } } exit(0);'
+));
+
+// A slow covering file: the fast test passed (printed a dot) and missed the mutant, then the slow file runs past the limit with or
+// without the mutation. The slow file caused the timeout, so the mutant escaped and is not scored as caught. See #56.
+$expect('timed out twice, and without the mutation (slow covering file)', 'Untested', $scored('echo "."; sleep(30);'));
+
+// The control: the fast test fails with the mutant on, so the child never reaches the slow file, and the mutant is caught.
+$expect('fast covering test kills it before the slow file', 'Tested', $scored(
+    'if (getenv("PEST_MUTATION_TESTING") !== false) { echo "  Tests:    1 failed
+"; exit(1); } sleep(30);'
+));
 
 exit($failures === 0 ? 0 : 1);
