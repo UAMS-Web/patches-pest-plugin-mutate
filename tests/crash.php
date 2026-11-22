@@ -67,6 +67,17 @@ $expect('time limit exceeded (scored a kill)', 'Tested', $scored('fwrite(STDERR,
 $expect('time limit exceeded, plain fatal line', 'Tested', $scored('echo "Fatal error: Maximum execution time of 1 second exceeded in /x/Foo.php on line 12\n"; exit(255);'));
 // A child that exhausts the hard memory limit (a mutant that makes a loop grow an array without end) did not pass: a kill. See #45.
 $expect('hard memory limit exhausted (scored a kill)', 'Tested', $scored('echo "Hard memory limit of 3221225472 bytes exhausted (tried to allocate 262144 bytes) in /x/Foo.php on line 12\n"; exit(137);'));
+// A child that overflows the stack on Windows exits 0xC00000FD (-1073741571) and prints nothing: a kill. See #58.
+// PHP truncates an exit status above 255 on Linux and macOS, so the case runs only where a child can report it.
+if (DIRECTORY_SEPARATOR === '\\') {
+    $expect('silent Windows stack-overflow exit (scored a kill)', 'Tested', $scored('exit(-1073741571);'));
+}
+// Any other silent failure ran no test, so matching the exit code and not the empty output keeps these refused.
+$expect('silent exit 1', 'refused', $scored('exit(1);'));
+$expect('silent exit 255', 'refused', $scored('exit(255);'));
+if (DIRECTORY_SEPARATOR === '\\') {
+    $expect('silent exit with another Windows status', 'refused', $scored('exit(-1073741819);'));
+}
 // A child that exits 0 with no report ran no test: refused.
 $expect('success that wrote no report', 'refused', $scored('exit(0);'));
 
