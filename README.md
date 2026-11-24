@@ -33,7 +33,7 @@ Applied in this order, which is the order in `composer.json`. A later patch is c
 - **`pest-plugin-mutate-windows-mutant-child.patch`**: Let a mutant child on Windows run its tests and write files, so its failure is a real kill (temporary; see #2524)
 - **`pest-plugin-mutate-drop-run-filter.patch`**: Drop the run's own --filter from each mutant child so a filtered run cannot score every mutant killed (temporary; see #2570)
 - **`pest-plugin-mutate-windows-filter-length.patch`**: Widen or refuse a mutant child's filter that PCRE cannot compile, or that would pass cmd.exe's command-line limit on Windows, so it cannot score a kill without running a test (temporary; see #2578, #3114)
-- **`pest-plugin-mutate-write-mutated-source.patch`**: Create the mutations directory and fail on a mutated source that cannot be written, so a run cannot score mutants it never applied (temporary; see #2812)
+- **`pest-plugin-mutate-write-mutated-source.patch`**: Create the mutations directory, fail on a mutated source that cannot be written, and rebuild a cached mutation whose mutated file is missing, so a run cannot score mutants it never applied (temporary; see #2812)
 - **`pest-plugin-mutate-drop-parallel-runner-options.patch`**: Drop the parallel runner's options (--passthru-php, --processes and the rest) from each mutant child so a parallel run given one cannot score every mutant killed (temporary; see #2926, #2947)
 
 - **`pest-plugin-mutate-function-defaults.patch`**: Select tests for a mutated scalar function default, so it is not scored without a test running it (temporary; see UAMS-Web/uams-2020#673)
