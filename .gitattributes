@@ -1,1 +1,2 @@
 *.patch -text
+docs/DECISIONS.md merge=union
