@@ -74,7 +74,14 @@ $common = [
 try {
     file_put_contents($locked, "x\n");
     chmod($locked, 0o000);
-    symlink($missing, $dangling);
+    // PHP's symlink() refuses a missing target on Windows, so the dangling link is made with mklink there (#110).
+    // Where no link can be made (no symlink privilege), the rows that need it are skipped, or fail in CI.
+    if (DIRECTORY_SEPARATOR === '\\') {
+        exec('cmd /c mklink '.escapeshellarg(str_replace('/', '\\', $dangling)).' '.escapeshellarg(str_replace('/', '\\', $missing)).' >NUL 2>&1');
+    } else {
+        symlink($missing, $dangling);
+    }
+    $linked = is_link($dangling);
     file_put_contents($source, "<?php\nreturn 'source';\n");
     file_put_contents($override, "<?php\nreturn 'override';\n");
 
@@ -106,6 +113,14 @@ $expected = [
 $failures = 0;
 foreach ($expected as $when => [$got, $want]) {
     foreach ($want as $what => $value) {
+        if (! $linked && str_contains($what, 'dangling')) {
+            $ci = getenv('CI') !== false && getenv('CI') !== '';
+            $failures += $ci ? 1 : 0;
+            fwrite(STDOUT, sprintf("%s  %s, %s: no symlink could be created here
+", $ci ? 'FAIL' : 'skip', $when, $what));
+
+            continue;
+        }
         if (! $unreadable && str_contains($what, 'unreadable')) {
             // In CI the case must be built, or the check would pass with the patch left out.
             $ci = getenv('CI') !== false && getenv('CI') !== '';
