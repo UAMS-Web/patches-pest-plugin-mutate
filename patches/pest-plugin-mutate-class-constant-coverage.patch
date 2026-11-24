@@ -1,4 +1,5 @@
 diff --git a/src/Mutation.php b/src/Mutation.php
+index c81b588..29e6c67 100644
 --- a/src/Mutation.php
 +++ b/src/Mutation.php
 @@ -8,6 +8,8 @@ use Pest\Exceptions\ShouldNotHappen;
@@ -10,27 +11,38 @@ diff --git a/src/Mutation.php b/src/Mutation.php
  use PhpParser\PrettyPrinter\Standard;
  use SebastianBergmann\Diff\Differ;
  use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
-@@ -56,6 +58,7 @@ class Mutation
+@@ -34,6 +36,8 @@ class Mutation
+         public readonly int $endLine,
+         public readonly string $diff,
+         public readonly string $modifiedSourcePath,
++        public readonly ?int $coverageStartLine = null,
++        public readonly ?int $coverageEndLine = null,
+     ) {}
  
+     /**
+@@ -57,6 +61,8 @@ class Mutation
          $newlyRenderedOriginalSource = (new Standard)->prettyPrintFile($orignalAst);
  
-+        $startLine = $originalNode->getStartLine();
          $endLine = $originalNode->getEndLine();
++        $coverageStartLine = null;
++        $coverageEndLine = null;
  
          if (
-@@ -66,13 +69,27 @@ class Mutation
+             $originalNode->getAttribute('parent') instanceof Param &&
+@@ -66,6 +72,21 @@ class Mutation
              $endLine = $originalNode->getAttribute('parent')->getAttribute('parent')->getEndLine();
          }
  
-+        // Constant initializers have no executable coverage lines. Select the
-+        // tests exercising their containing class, not unrelated uncovered code.
++        // Constant initializers have no executable coverage lines. Look the covering
++        // tests up over their containing class, and keep the mutant's own lines for
++        // printing and storage.
 +        $ancestor = $originalNode;
 +        while (($ancestor = $ancestor->getAttribute('parent')) instanceof Node) {
 +            if ($ancestor instanceof Node\Const_ && $ancestor->getAttribute('parent') instanceof ClassConst) {
 +                $class = $ancestor->getAttribute('parent')->getAttribute('parent');
 +                if ($class instanceof ClassLike) {
-+                    $startLine = $class->getStartLine();
-+                    $endLine = $class->getEndLine();
++                    $coverageStartLine = $class->getStartLine();
++                    $coverageEndLine = $class->getEndLine();
 +                }
 +                break;
 +            }
@@ -39,18 +51,50 @@ diff --git a/src/Mutation.php b/src/Mutation.php
          $id = hash('xxh3', $file->getRealPath().$mutator.$modifiedSource);
  
          return new self(
-             $file,
-             $id,
-             $mutator,
--            $originalNode->getStartLine(),
-+            $startLine,
+@@ -76,6 +97,8 @@ class Mutation
              $endLine,
              self::diff($newlyRenderedOriginalSource, $modifiedSource),
              $modifiedSourcePath,
++            $coverageStartLine,
++            $coverageEndLine,
+         );
+     }
+ 
+@@ -180,6 +203,8 @@ class Mutation
+             'end_line' => $this->endLine,
+             'diff' => $this->diff,
+             'modified_source_path' => $this->modifiedSourcePath,
++            'coverage_start_line' => $this->coverageStartLine,
++            'coverage_end_line' => $this->coverageEndLine,
+         ];
+     }
+ 
+@@ -195,5 +220,7 @@ class Mutation
+         $this->endLine = $data['end_line'];
+         $this->diff = $data['diff'];
+         $this->modifiedSourcePath = $data['modified_source_path'];
++        $this->coverageStartLine = $data['coverage_start_line'] ?? null;
++        $this->coverageEndLine = $data['coverage_end_line'] ?? null;
+     }
+ }
+diff --git a/src/MutationTest.php b/src/MutationTest.php
+index 35f4e8c..094aa4c 100644
+--- a/src/MutationTest.php
++++ b/src/MutationTest.php
+@@ -81,7 +81,7 @@ class MutationTest
+     {
+         // TODO: we should pass the tests to run in another way, maybe via cache, mutation or env variable
+         $filters = [];
+-        foreach (range($this->mutation->startLine, $this->mutation->endLine) as $lineNumber) {
++        foreach (range($this->mutation->coverageStartLine ?? $this->mutation->startLine, $this->mutation->coverageEndLine ?? $this->mutation->endLine) as $lineNumber) {
+             foreach ($coveredLines[$this->mutation->file->getRealPath()][$lineNumber] ?? [] as $test) {
+                 if (preg_match('/\\\\([a-zA-Z0-9]*)::(__pest_evaluable_)?([^#]*)"?/', $test, $matches) !== 1) {
+                     continue;
 diff --git a/src/Support/NodeVisitor.php b/src/Support/NodeVisitor.php
+index 902a21a..d186062 100644
 --- a/src/Support/NodeVisitor.php
 +++ b/src/Support/NodeVisitor.php
-@@ -64,7 +64,22 @@
+@@ -64,7 +64,22 @@ class NodeVisitor extends NodeVisitorAbstract
              return null;
          }
  
