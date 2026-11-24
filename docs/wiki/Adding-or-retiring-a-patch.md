@@ -7,7 +7,7 @@ This page is for changing the package itself. The detailed procedure is the `pat
 1. Cut the patch against the exact upstream pin (`pestphp/pest-plugin-mutate` `5.0.2`) so that `git apply -p1` accepts it.
 2. Register it under `extra.patches` in `composer.json` with a description. The description names the ticket that tracks the upstream fix, where there is one, and the path starts `vendor/uams-web/patches-pest-plugin-mutate/patches/`.
 3. **Place it in the order it was cut for.** Patches apply in the order listed, and a later patch is cut against the output of the earlier ones.
-4. Add its entry to the list in the README and to [Patches](Patches.md).
+4. Add its entry to the list in the README and to [Patches](Patches.md). The README text must equal the `composer.json` key exactly; `node scripts/check-patch-descriptions.mjs` checks it.
 5. Where the patch changes behavior a check can drive, add a check under `tests/` and call it from `tests/check.sh`, and confirm that `SKIP_PATCH=<file> tests/check.sh` then fails. See [Verifying the set](Verifying-the-set.md).
 6. If a ticket in this repository waits on an upstream issue or pull request, add an upstream watch row in the same pull request (see below).
 
