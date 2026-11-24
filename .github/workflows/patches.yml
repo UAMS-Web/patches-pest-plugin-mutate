@@ -32,4 +32,5 @@ jobs:
           php-version: '8.4'
           tools: composer
       - run: node scripts/check-patch-descriptions.mjs
+      - run: node .claude/skills/decision-log/scripts/check-decision-log-order.mjs
       - run: bash tests/check.sh
