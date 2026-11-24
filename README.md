@@ -46,7 +46,7 @@ Applied in this order, which is the order in `composer.json`. A later patch is c
 - **`pest-plugin-mutate-url-stat-unreadable.patch`**: Report an existing file that cannot be read as present from the mutation stream wrapper's url_stat(), so code that reads it behind an is_file() or file_exists() check reaches the read in a mutant child (temporary; see UAMS-Web/patches-pest-plugin-mutate#52)
 - **`pest-plugin-mutate-isolated-process-activation.patch`**: Start the mutation stream wrapper in an isolated PHPUnit child, which has no Pest kernel and so never runs `Mutate::boot()`, so an isolated test sees the mutated source (temporary; see UAMS-Web/UAMSWP-Logo-List#82). Split from the no-test check in UAMS-Web/patches-pest-plugin-mutate#92, so each is reported and retired on its own
 
-Each description names the ticket that tracks the upstream fix, or the consumer ticket that moved the patch here where no upstream ticket exists.
+Each description names the ticket that tracks the upstream fix, or the consumer ticket that moved the patch here where no upstream ticket exists. The text after each file name is the key `composer.json` lists the patch under, character for character; `node scripts/check-patch-descriptions.mjs` fails when the two differ, and the `Patches` workflow runs it.
 
 ## Versioning and verification
 
