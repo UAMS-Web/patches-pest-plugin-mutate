@@ -9,15 +9,30 @@ diff --git a/src/Mutation.php b/src/Mutation.php
  use PhpParser\PrettyPrinter\Standard;
  use SebastianBergmann\Diff\Differ;
  use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
-@@ -61,9 +60,9 @@ class Mutation
+@@ -59,12 +58,22 @@ class Mutation
  
+         $endLine = $originalNode->getEndLine();
+ 
++        // Use the function or method body when selecting tests for a mutated parameter default. The default can be a bare
++        // literal or an expression around it (`-5`, `[1, 2]`, `3 + 1`), so walk up from the node to the parameter that holds it.
++        $ancestor = $originalNode->getAttribute('parent');
++
++        while ($ancestor instanceof Node && ! $ancestor instanceof Param && ! $ancestor instanceof Node\FunctionLike && ! $ancestor instanceof Node\Stmt) {
++            $ancestor = $ancestor->getAttribute('parent');
++        }
++
          if (
-             $originalNode->getAttribute('parent') instanceof Param &&
+-            $originalNode->getAttribute('parent') instanceof Param &&
 -            $originalNode->getAttribute('parent')->getAttribute('parent') instanceof ClassMethod
-+            $originalNode->getAttribute('parent')->getAttribute('parent') instanceof Node\FunctionLike
++            $ancestor instanceof Param &&
++            $ancestor->default instanceof Node &&
++            $ancestor->default->getStartFilePos() <= $originalNode->getStartFilePos() &&
++            $originalNode->getEndFilePos() <= $ancestor->default->getEndFilePos() &&
++            $ancestor->getAttribute('parent') instanceof Node\FunctionLike
          ) {
 -            // use the end line of the method instead if a parameter is mutated, otherwise it is not considered as covered
-+            // Use the function or method body when selecting tests for a mutated parameter.
-             $endLine = $originalNode->getAttribute('parent')->getAttribute('parent')->getEndLine();
+-            $endLine = $originalNode->getAttribute('parent')->getAttribute('parent')->getEndLine();
++            $endLine = $ancestor->getAttribute('parent')->getEndLine();
          }
  
+         $id = hash('xxh3', $file->getRealPath().$mutator.$modifiedSource);

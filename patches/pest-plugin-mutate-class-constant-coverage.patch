@@ -17,9 +17,9 @@ diff --git a/src/Mutation.php b/src/Mutation.php
 +        $startLine = $originalNode->getStartLine();
          $endLine = $originalNode->getEndLine();
  
-         if (
-@@ -66,13 +69,27 @@ class Mutation
-             $endLine = $originalNode->getAttribute('parent')->getAttribute('parent')->getEndLine();
+         // Use the function or method body when selecting tests for a mutated parameter default. The default can be a bare
+@@ -76,13 +79,27 @@ class Mutation
+             $endLine = $ancestor->getAttribute('parent')->getEndLine();
          }
  
 +        // Constant initializers have no executable coverage lines. Select the
@@ -50,7 +50,7 @@ diff --git a/src/Mutation.php b/src/Mutation.php
 diff --git a/src/Support/NodeVisitor.php b/src/Support/NodeVisitor.php
 --- a/src/Support/NodeVisitor.php
 +++ b/src/Support/NodeVisitor.php
-@@ -64,7 +64,22 @@
+@@ -64,7 +64,22 @@ class NodeVisitor extends NodeVisitorAbstract
              return null;
          }
  
